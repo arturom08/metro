@@ -22,6 +22,36 @@ def generar_id_unique():
     return str(uuid.uuid4())
 
 
+def guardar_datos():
+    global users
+    try:
+        with open('users.txt', 'w') as f:
+            unique_users = {user.id: user for user in users}.values()  # Eliminar duplicados por ID
+            json.dump([user.__dict__ for user in unique_users], f, indent=4)
+            print("Datos de usuario guardados correctamente")
+    except AttributeError:
+        print("Los datos de los usuarios no están cargados.")
+    except Exception as e:
+        print(f"No se pudo guardar los datos: {e}")
+# Inicializar conjunto de identificadores de usuario
+user_ids = set()
+
+
+def guardar_datos_desde_api(data):
+    global users, user_ids
+    try:
+        new_users = [User(d['id'], d['name'], d['email'], d['username'], d['type']) for d in data]
+
+        # Verificar si los nuevos usuarios ya existen en users.txt
+        for new_user in new_users:
+            if new_user not in users:
+                users.append(new_user)
+                user_ids.add(new_user.id)  # Agregar el nuevo ID al conjunto de IDs
+
+        # Guardar los datos actualizados en users.txt
+        guardar_datos()
+    except Exception as e:
+        print(f"No se pudo guardar los datos desde la API: {e}")
 
 def cargar_datos():
     global users
@@ -33,6 +63,7 @@ def cargar_datos():
             if response.status_code == 200:
                 data = response.json()
                 users.extend([User(d['id'], d['name'], d['email'], d['username'], d['type']) for d in data])
+                guardar_datos_desde_api(data)  # Guardar los datos desde la API
         else:
             # Si el archivo existe, cargar datos desde el archivo
             cargar_datos_desde_archivo()
@@ -41,81 +72,29 @@ def cargar_datos():
             response = requests.get(METROTIFY_API_URL)
             if response.status_code == 200:
                 data = response.json()
-                new_users = [User(d['id'], d['name'], d['email'], d['username'], d['type']) for d in data]
-
-                # Verificar si los nuevos usuarios ya existen en users.txt
-                for new_user in new_users:
-                    if new_user not in users:
-                        users.append(new_user)
-
+                guardar_datos_desde_api(data)  # Guardar los nuevos datos desde la API
     except requests.RequestException as e:
         print(f"Error en la solicitud: {e}")
 
 
-# def guardar_datos(user_data=None):
-#     global users
-#     try:
-#         with open('users.txt', 'a') as f:
-#             if user_data:
-
-#                 json.dump(user_data, f, indent=4)
-#                 f.write('\n')
-#                 print("Datos de usuario guardados correctamente")
-#             else:
-#                 for user in users:
-#                     json.dump(user.__dict__, f, indent=4)
-#                     f.write('\n')
-#                 print("Datos de usuario guardados correctamente")
-#     except AttributeError:
-#         print("Los datos de los usuarios no estan cargados.")
-#     except Exception as e:
-#         print(f"No se pudo guardar los datos: {e}")
-
-def guardar_datos(user_data=None):
-    global users
-    try:
-        with open('users.txt', 'a') as f:
-            if user_data:
-                # Verificar si el usuario ya existe en users.txt
-                if user_data not in users:
-                    json.dump(user_data, f, indent=4)
-                    f.write('\n')
-                    users.append(user_data)
-                    print("Datos de usuario guardados correctamente")
-                else:
-                    print("El usuario ya existe. No se guardaron los datos.")
-            else:
-                # Agregar corchetes al principio y al final de la lista
-                f.write("[\n")
-                for user in users:
-                    json.dump(user.__dict__, f, indent=4)
-                    f.write(',\n')
-                f.write("]\n")
-                print("Datos de usuario guardados correctamente")
-    except AttributeError:
-        print("Los datos de los usuarios no están cargados.")
-    except Exception as e:
-        print(f"No se pudo guardar los datos: {e}")    
-
-#carga los datos desde el archivo en formato json
-
 
 def cargar_datos_desde_archivo():
-    global users
-    
+    global users, user_ids
     try:
         with open('users.txt', 'r') as f:
-            for line in f:
-                try:
-                    user_data = json.loads(line.strip())
+            all_users_data = json.load(f)
+            for user_data in all_users_data:
+                user_id = user_data['id']
+                if user_id not in user_ids:
                     users.append(User(**user_data))
-                except json.JSONDecodeError as e:
-                    print(f"Error al decodificar JSON en la línea: {line}")
-                    print(f"Error: {e}")
+                    user_ids.add(user_id)
     except FileNotFoundError:
         print("El archivo users.txt no existe. No se cargaron datos.")
     except Exception as e:
         print(f"No se pudo cargar los datos desde users.txt: {e}")
+
+
+
 
 
 def consultar_todo():
