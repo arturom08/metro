@@ -9,11 +9,36 @@ METROTIFY_API_URL = "https://raw.githubusercontent.com/Algoritmos-y-Programacion
 
 
 class User:
-    def __init__(self, id, name, email, username, type):
+    """Representa un usuario de Metrotify.
+
+    Args:
+        id (str): El identificador único del usuario.
+        name (str): El nombre del usuario.
+        email (str): El correo electrónico del usuario.
+        username (str): El nombre de usuario del usuario.
+        type (str): El tipo de usuario (por ejemplo, 'musician' o 'listener').
+        password (str, optional): La contraseña del usuario. Por defecto es None.
+    """
+  
+    def __init__(self, id, name, email, username, type, password=None):
+        """Inicializa un nuevo usuario de Metrotify.
+
+        Si se proporciona un valor para 'password', se asigna como la contraseña del usuario.
+        Si no se proporciona 'password', se asigna None.
+
+        Args:
+            id (str): El identificador único del usuario.
+            name (str): El nombre del usuario.
+            email (str): El correo electrónico del usuario.
+            username (str): El nombre de usuario del usuario.
+            type (str): El tipo de usuario (por ejemplo, 'musician' o 'listener').
+            password (str, optional): La contraseña del usuario. Por defecto es None.
+        """
         self.id = id
         self.name = name
         self.email = email
         self.username = username
+        self.password = password
         self.type = type
 
 users = []
@@ -33,6 +58,7 @@ def guardar_datos():
         print("Los datos de los usuarios no están cargados.")
     except Exception as e:
         print(f"No se pudo guardar los datos: {e}")
+
 # Inicializar conjunto de identificadores de usuario
 user_ids = set()
 
@@ -77,16 +103,20 @@ def cargar_datos():
         print(f"Error en la solicitud: {e}")
 
 
-
 def cargar_datos_desde_archivo():
     global users, user_ids
     try:
         with open('users.txt', 'r') as f:
             all_users_data = json.load(f)
+            users.clear()
+            user_ids.clear()
             for user_data in all_users_data:
                 user_id = user_data['id']
                 if user_id not in user_ids:
-                    users.append(User(**user_data))
+                    if 'password' in user_data:
+                        users.append(User(**user_data))
+                    else:
+                        users.append(User(**user_data, password=None))
                     user_ids.add(user_id)
     except FileNotFoundError:
         print("El archivo users.txt no existe. No se cargaron datos.")
@@ -96,31 +126,45 @@ def cargar_datos_desde_archivo():
 
 
 
-
-def consultar_todo():
-    global users
-    if not users:
-        print("No hay usuarios cargados")
-        return
-    print("Lista de usuarios:")
-    for user in users:
-        print(f"Nombre: {user.name}, Email: {user.email}, Username: {user.username}, Tipo: {user.type}")
-
-
-if __name__ == "__main__":
-    cargar_datos()
-    guardar_datos()
-        
-
-
 def mostrar_menu():
-    print("Bienvenido a 🎧 Metrotify ♬")
-    print("1. Registrar nuevo usuario")
-    print("2. Buscar perfiles por nombre")
-    print("3. Actualizar información personal")
-    print("4. Borrar cuenta")
-    print("5. Salir")
-    print("6. Consultar todos los usuarios")
+    while True:
+        print("Bienvenido a 🎧 Metrotify ♬")
+        questions = [
+            inquirer.List('option',
+                        message="Seleccione una opción:",
+                        choices=[
+                            ("Iniciar session"),
+                            ("Registrar nuevo usuario"),
+                            ("Buscar perfiles por nombre"),
+                            ("Actualizar información personal"),
+                            ("Borrar cuenta"),
+                            ("Salir"),
+                        ],
+                        ),
+        ]
+        answer = inquirer.prompt(questions)
+        selected_option = answer['option']
+
+        # Lógica para dirigir la selección a las funciones correspondientes        
+        if selected_option == "Iniciar session":
+            iniciar_session()
+        elif selected_option == "Registrar nuevo usuario":
+            registrar_usuario()
+        elif selected_option == "Buscar perfiles por nombre":
+            buscar_perfiles_por_nombre()
+        elif selected_option == "Actualizar información personal":
+            actualizar_informacion_personal()
+        elif selected_option == "Borrar cuenta":
+            borrar_cuenta()
+        elif selected_option == "Salir":
+            print("¡Hasta luego!")
+            break
+        else: 
+            print("Opción inválida. Intente nuevamente.")
+
+def iniciar_session():
+    email = input("Ingrese el nuevo correo electrónico: ")
+    password = input("Ingresa la contraseña ")
 
 
 def registrar_usuario():
@@ -175,20 +219,51 @@ def registrar_usuario():
         "type": type_select,
     }
 
-    guardar_datos(user_registered)
+    registrar_nuevo(user_registered)
 
     print("Usuario registrado exitosamente.")
     print(json.dumps(user_registered, indent=4))
 
-# API_URL = "https://raw.githubusercontent.com/Algoritmos-y-Programacion/api-proyecto/main/users.json"
+#funcion registrar nuevos usuarios
+def registrar_nuevo(user_data):
+    try:
+        # Verificar si el archivo users.txt existe
+        if not os.path.exists('users.txt'):
+            # Si el archivo no existe, crearlo y agregar el nuevo usuario
+            with open('users.txt', 'w1') as f:
+                json.dump([user_data], f, indent=4)
+                f.write('\n')
+                
+        else:
+            # Si el archivo existe, abrirlo para agregar el nuevo usuario
+            with open('users.txt', 'r+') as f:
+                # Cargar los datos actuales del archivo
+                users = json.load(f)
+                
+                # Agregar el nuevo usuario a la lista de usuarios
+                users.append(user_data)
+                
+                # Regresar al principio del archivo
+                f.seek(0)
+                
+                # Escribir la lista de usuarios actualizada en el archivo
+                json.dump(users, f, indent=4)
+                f.truncate()        
+        print("Datos de usuario guardados correctamente")
+    except Exception as e:
+        print(f"No se pudo guardar los datos: {e}")
+
 
 #Buscar perfiles en el txt
 
 def buscar_perfiles_por_nombre():
     global users
 
+    # Recargar datos desde el archivo antes de realizar la búsqueda
+    cargar_datos_desde_archivo()
+
     if not users:
-        print("No se han cargado los datos del usuario. intente recargar el prorama")
+        print("No se han cargado los datos del usuario. Intente recargar el programa")
         return
     
     while True:  
@@ -205,16 +280,25 @@ def buscar_perfiles_por_nombre():
                     print(f"Tipo: {perfil.type}") 
 
         print("Submenu 🎧 Metrotify ♬")
-        print("1. Volver al menu")
-        print("2. Continuar con otra busqueda")
-        opcion = input("Seleccione una opción (1-2): ")
-
-        if opcion == "1":
-            break
-        elif opcion == "2":
+     
+        questions = [
+            inquirer.List('option',
+                          message="Seleccione una opción:",
+                          choices=[
+                              "Volver al menú",
+                              "Continuar con otra búsqueda",
+                          ],
+                          ),
+        ]
+        answer = inquirer.prompt(questions)
+        selected_option = answer['option']
+ 
+        if selected_option == "Volver al menú":
+            mostrar_menu()
+        elif selected_option == "Continuar con otra búsqueda":
             continue
         else:
-          print("Opcion invalida. intente nuevamente.")
+            print("Opción inválida. Intente nuevamente.")
 
 
    
@@ -239,25 +323,8 @@ def borrar_cuenta():
 
     print("Cuenta eliminada correctamente.")
 
-
-
+# Bucle principal
 if __name__ == "__main__":
-    while True:
-        mostrar_menu()
-        opcion = input("Seleccione una opción (1-5): ")
-
-        if opcion == "1":
-            registrar_usuario()
-        elif opcion == "2":
-            buscar_perfiles_por_nombre()
-        elif opcion == "3":
-            actualizar_informacion_personal()
-        elif opcion == "4":
-            borrar_cuenta()
-        elif opcion == "5":
-            print("¡Hasta luego!")
-            break
-        elif opcion == "6":
-            consultar_todo()
-        else:
-            print("Opción inválida. Intente nuevamente.")
+    cargar_datos()
+    guardar_datos()
+    mostrar_menu()
