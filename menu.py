@@ -4,42 +4,15 @@ import pickle
 import inquirer
 import uuid
 import os
+from user import User
+from sessions import Session
+import getpass
+
+
 
 METROTIFY_API_URL = "https://raw.githubusercontent.com/Algoritmos-y-Programacion/api-proyecto/main/users.json"
 
 
-class User:
-    """Representa un usuario de Metrotify.
-
-    Args:
-        id (str): El identificador único del usuario.
-        name (str): El nombre del usuario.
-        email (str): El correo electrónico del usuario.
-        username (str): El nombre de usuario del usuario.
-        type (str): El tipo de usuario (por ejemplo, 'musician' o 'listener').
-        password (str, optional): La contraseña del usuario. Por defecto es None.
-    """
-  
-    def __init__(self, id, name, email, username, type, password=None):
-        """Inicializa un nuevo usuario de Metrotify.
-
-        Si se proporciona un valor para 'password', se asigna como la contraseña del usuario.
-        Si no se proporciona 'password', se asigna None.
-
-        Args:
-            id (str): El identificador único del usuario.
-            name (str): El nombre del usuario.
-            email (str): El correo electrónico del usuario.
-            username (str): El nombre de usuario del usuario.
-            type (str): El tipo de usuario (por ejemplo, 'musician' o 'listener').
-            password (str, optional): La contraseña del usuario. Por defecto es None.
-        """
-        self.id = id
-        self.name = name
-        self.email = email
-        self.username = username
-        self.password = password
-        self.type = type
 
 users = []
 
@@ -123,22 +96,42 @@ def cargar_datos_desde_archivo():
     except Exception as e:
         print(f"No se pudo cargar los datos desde users.txt: {e}")
 
+def iniciar_sesion_menu(user=None):
+    user = None
+    while not user:
+        email = input("Ingrese el nuevo correo electrónico: ")
+        password = input("Ingresa la contraseña: ")
+        
+        # Obtener el usuario y el token utilizando la función iniciar_sesion
+        user, token = Session.iniciar_sesion(email, password)
+    
+        if user and token:
+            session = Session(user, token)  # Crear una instancia de Session con el usuario y el token
+            print("¡Inicio de sesión exitoso!")
+            # Aquí puedes hacer lo que necesites con la sesión
+        else:
+            print("Correo electrónico o contraseña incorrectos.")
+            print("Por favor, inténtelo de nuevo.")
+    mostrar_menu(user, session) 
 
 
-
-def mostrar_menu():
-    while True:
-        print("Bienvenido a 🎧 Metrotify ♬")
+def mostrar_menu(user=None, session=None):
+    while True: 
+        if user:
+            print(f"Bienvenido a 🎧 Metrotify, {user.name} ♬")
+        else:
+            print("Bienvenido a 🎧 Metrotify ♬")
+           
         questions = [
             inquirer.List('option',
                         message="Seleccione una opción:",
                         choices=[
-                            ("Iniciar session"),
+                            ("Iniciar sesión"),
                             ("Registrar nuevo usuario"),
                             ("Buscar perfiles por nombre"),
                             ("Actualizar información personal"),
                             ("Borrar cuenta"),
-                            ("Salir"),
+                            ("Cerrar sesión"),
                         ],
                         ),
         ]
@@ -146,25 +139,25 @@ def mostrar_menu():
         selected_option = answer['option']
 
         # Lógica para dirigir la selección a las funciones correspondientes        
-        if selected_option == "Iniciar session":
-            iniciar_session()
+        if selected_option == "Iniciar sesión":
+            iniciar_sesion_menu()
         elif selected_option == "Registrar nuevo usuario":
             registrar_usuario()
         elif selected_option == "Buscar perfiles por nombre":
-            buscar_perfiles_por_nombre()
+            buscar_perfiles_por_nombre(user, session)
         elif selected_option == "Actualizar información personal":
-            actualizar_informacion_personal()
+            actualizar_informacion_personal(user, session)
         elif selected_option == "Borrar cuenta":
-            borrar_cuenta()
-        elif selected_option == "Salir":
-            print("¡Hasta luego!")
+            borrar_cuenta(user, session)
+        elif selected_option == "Cerrar sesión":
+            cerrar_sesion(session)
             break
         else: 
             print("Opción inválida. Intente nuevamente.")
 
-def iniciar_session():
-    email = input("Ingrese el nuevo correo electrónico: ")
-    password = input("Ingresa la contraseña ")
+
+    
+
 
 
 def registrar_usuario():
@@ -255,8 +248,7 @@ def registrar_nuevo(user_data):
 
 
 #Buscar perfiles en el txt
-
-def buscar_perfiles_por_nombre():
+def buscar_perfiles_por_nombre(user=None, session=None):
     global users
 
     # Recargar datos desde el archivo antes de realizar la búsqueda
@@ -279,7 +271,7 @@ def buscar_perfiles_por_nombre():
                     print(f"Username: {perfil.username}")
                     print(f"Tipo: {perfil.type}") 
 
-        print("Submenu 🎧 Metrotify ♬")
+        print("Submenu 🎧 Metrotify ♬" )
      
         questions = [
             inquirer.List('option',
@@ -294,37 +286,169 @@ def buscar_perfiles_por_nombre():
         selected_option = answer['option']
  
         if selected_option == "Volver al menú":
-            mostrar_menu()
+            mostrar_menu(user, session)
         elif selected_option == "Continuar con otra búsqueda":
             continue
         else:
             print("Opción inválida. Intente nuevamente.")
 
+def cerrar_sesion(session):
+    print("¿Quiere cerrar la sesión? ")
 
+    questions = [
+        inquirer.List('confirm',
+                      message="Seleccione una opción:",
+                      choices=['Sí', 'No'],
+                      ),
+    ]
+    answer = inquirer.prompt(questions)
+    confirmation = answer['confirm']
+
+    if confirmation == 'Sí':
+        if session:
+            session.end_session()
+            session = None
+        # Aquí iría la lógica para eliminar la cuenta
+        print("sesion cerrada correctamente.")
+        mostrar_menu()
+    else:
+        print("Operación cancelada. Su cuenta no se cerro.")
    
     # Mostrar los perfiles encontrados
 
-def actualizar_informacion_personal():
-    id = input("Ingrese el ID del usuario: ")
-    name = input("Ingrese el nuevo nombre: ")
-    email = input("Ingrese el nuevo correo electrónico: ")
-    username = input("Ingrese el apodo de usuario: ")
+def buscar_usuario_por_id(user_id):
+    try:
+        with open('users.txt', 'r') as file:
+            users_data = json.load(file)
+            for user_data in users_data:
+                if user_data['id'] == user_id:
+                    return user_data
+    except FileNotFoundError:
+        print("El archivo users.txt no existe.")
+    except Exception as e:
+        print(f"No se pudo buscar el usuario: {e}")
+    return None
 
-    # Aquí iría la lógica para actualizar la información personal en la API
-    # ...
+def actualizar_informacion_personal(user=None, session=None):
+    if not user:
+        print("Debe iniciar sesión para actualizar la información personal.")
+        return
+    
+    user_id = user.id
+    user_data = buscar_usuario_por_id(user_id)
+    if not user_data:
+        print("No se encontró información del usuario.")
+        return
 
-    print("Información actualizada correctamente.")
+    # print(f"Usuario encontrado: {user_data}")
 
-def borrar_cuenta():
-    id_usuario = input("Ingrese el ID del usuario para borrar la cuenta: ")
+    # Solicitar al usuario que ingrese la nueva información personal
+    print(user_data['name'])
+    new_name = input(f"Ingrese el nuevo nombre ({user_data['name']}): ")
+    print(user_data['email'])
+    new_email = input(f"Ingrese el nuevo correo electrónico ({user_data['email']}): ")
+    print(user_data['username'])
+    new_username = input(f"Ingrese el nuevo nombre de usuario ({user_data['username']}): ")
+    new_password = getpass.getpass("Ingrese su nueva contraseña: ")
 
-    # Aquí iría la lógica para borrar la cuenta en la API
-    # ...
+    # Actualizar la información personal en los datos del usuario
+    user_data['name'] = new_name if new_name else user_data['name']
+    user_data['email'] = new_email if new_email else user_data['email']
+    user_data['username'] = new_username if new_username else user_data['username']
+    user_data['password'] = new_password if new_password else user_data['password']
 
-    print("Cuenta eliminada correctamente.")
+    # Actualizar los datos del usuario en el archivo users.txt
+    try:
+        with open('users.txt', 'r') as file:
+            users_data = json.load(file)
+
+        for i, data in enumerate(users_data):
+            if data['id'] == user_id:
+                users_data[i] = user_data
+
+        with open('users.txt', 'w') as file:
+            json.dump(users_data, file, indent=4)
+
+        print("Información actualizada correctamente.")
+    except Exception as e:
+        print(f"No se pudo actualizar la información: {e}")
+
+    mostrar_menu(user, session)
+
+
+    
+
+def borrar_cuenta(user=None, session=None):
+    def eliminar_usuario(user_id):
+        try:
+            # Cargar los datos actuales del archivo
+            with open('users.txt', 'r') as file:
+                users = json.load(file)
+
+            # Eliminar el usuario del listado
+            users = [user_data for user_data in users if user_data.get('id') != user_id]
+
+            # Escribir la lista actualizada de usuarios en el archivo
+            with open('users.txt', 'w') as file:
+                json.dump(users, file, indent=4)
+
+            print("Usuario eliminado correctamente.")
+        except Exception as e:
+            print(f"No se pudo eliminar el usuario: {e}")
+
+    if session is None:
+        print("Debe iniciar sesión para poder eliminar su cuenta.")
+        return
+
+    if user is None:
+        print("Debe proporcionar información de usuario para eliminar la cuenta.")
+        return
+
+    if isinstance(user, User):
+        user_data = {
+            'id': user.id,
+            'name': user.name,
+            'email': user.email,
+            'username': user.username,
+            'type': user.type,
+            'password': user.password
+        }
+    else:
+        user_data = user
+
+    # Obtener el token de la sesión o proporcionar uno si no está disponible
+    token = getattr(session, 'token', None) or 'default_token_value'
+
+    # Crear una nueva instancia de Session con los datos del usuario y el token
+    session = Session(user_data['id'], user_data, token)
+
+    print("¿Está seguro de que desea eliminar su cuenta?")
+
+    questions = [
+        inquirer.List('confirm',
+                      message="Seleccione una opción:",
+                      choices=['Sí', 'No'],
+                      ),
+    ]
+    answer = inquirer.prompt(questions)
+    confirmation = answer['confirm']
+
+    if confirmation == 'Sí':
+        if session.id:  # Verifica si el atributo id del usuario de la sesión está presente
+            eliminar_usuario(session.id)  # Eliminar el usuario usando su id
+            session.end_session()  # Cerrar la sesión antes de volver al menú principal
+        else:
+            print("No se encontró información del usuario.")
+    else:
+        print("Operación cancelada. Su cuenta no se ha eliminado.")
+
+
 
 # Bucle principal
 if __name__ == "__main__":
     cargar_datos()
     guardar_datos()
-    mostrar_menu()
+    # cargar_album_api()
+    # guardar_albums()
+    mostrar_menu(user=None, session=None)
+    

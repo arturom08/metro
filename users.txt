@@ -800,35 +800,11 @@
         "type": "musician"
     },
     {
-        "id": "535c08fb-8932-4a7b-b7b5-8e15e8e2387f",
-        "name": "lisbeth",
-        "email": "liscarol@gmail.com",
-        "username": "liscarol",
-        "password": "amor..09",
-        "type": "musician"
-    },
-    {
-        "id": "3d537d05-fbee-4d31-9913-fa1ca0ea4273",
-        "name": "daniel",
-        "email": "danielmedina@gmail.com",
-        "username": "danielmedina",
-        "password": "inglaterra..84",
-        "type": "listener"
-    },
-    {
-        "id": "33eeb3eb-075a-467f-9536-990b1ebe60b6",
-        "name": "daniel",
-        "email": "ds",
-        "username": "sd",
-        "password": "berlin..57",
-        "type": "musician"
-    },
-    {
-        "id": "b2d499d6-2167-42cc-914c-2cfe381255f8",
-        "name": "vit",
-        "email": "vit@gmail.com",
-        "username": "vitlaptop",
-        "password": "caracas..09",
+        "id": "d02ed920-20ac-4848-851c-e754e942cb27",
+        "name": "Daniel Arturo Medina Villarroel",
+        "email": "daniel17@gmail.com",
+        "username": "DanielTheking",
+        "password": "zelanda..17",
         "type": "listener"
     }
 ]
