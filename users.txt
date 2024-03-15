@@ -806,5 +806,13 @@
         "username": "DanielTheking",
         "password": "zelanda..17",
         "type": "listener"
+    },
+    {
+        "id": "1cf6b928-4267-4394-b228-adda644ffd9e",
+        "name": "Lisbeth Villarroel",
+        "email": "lisbethcvilla@gmail.com",
+        "username": "Lis Yukary",
+        "password": "amor..09",
+        "type": "musician"
     }
 ]

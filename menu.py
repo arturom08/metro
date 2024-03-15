@@ -4,9 +4,12 @@ import pickle
 import inquirer
 import uuid
 import os
+import getpass
+from albums import Albums
 from user import User
 from sessions import Session
-import getpass
+from list_albums import cargar_album_api, guardar_albums
+
 
 
 
@@ -146,7 +149,7 @@ def mostrar_menu(user=None, session=None):
         elif selected_option == "Buscar perfiles por nombre":
             buscar_perfiles_por_nombre(user, session)
         elif selected_option == "Actualizar información personal":
-            actualizar_informacion_personal(user, session)
+            actualizar_informacion_personal(user)
         elif selected_option == "Borrar cuenta":
             borrar_cuenta(user, session)
         elif selected_option == "Cerrar sesión":
@@ -247,7 +250,6 @@ def registrar_nuevo(user_data):
         print(f"No se pudo guardar los datos: {e}")
 
 
-#Buscar perfiles en el txt
 def buscar_perfiles_por_nombre(user=None, session=None):
     global users
 
@@ -263,34 +265,114 @@ def buscar_perfiles_por_nombre(user=None, session=None):
 
         resultados = [perfil for perfil in users if perfil.name.lower().startswith(name.lower())]
         if resultados:
-                print("Resultados de búsqueda: ")
-                for perfil in resultados:
-                    print(f"Id: {perfil.id}")
-                    print(f"Nombre: {perfil.name}")
-                    print(f"Email: {perfil.email}")
-                    print(f"Username: {perfil.username}")
-                    print(f"Tipo: {perfil.type}") 
+            print("Resultados de búsqueda: ")
+            for perfil in resultados:
+                print(f"Id: {perfil.id}")
+                print(f"Nombre: {perfil.name}")
+                print(f"Email: {perfil.email}")
+                print(f"Username: {perfil.username}")
+                print(f"Tipo: {perfil.type}") 
 
-        print("Submenu 🎧 Metrotify ♬" )
-     
+                perfil_select = perfil
+
+            # Mostrar el submenú si se encontró un perfil
+            submenulist(perfil_select, user, session)
+
+        else:
+            print("No se encontraron resultados para la búsqueda.")
+
+def submenulist(perfil_select=None, user=None, session=None):
+    print("Submenu 🎧 Metrotify ♬" )
+    menu_a = ""
+    if perfil_select.type == "listener":
+        menu_a = "listener"
+    elif perfil_select.type == "musician":
+        menu_a = "musician"
+    else:
+        print("Opción inválida. Intente nuevamente.")
+        return
+
+    questions = [
+        inquirer.List('option',
+                      message="Seleccione una opción:",
+                      choices=[
+                          "Volver al menú",
+                          "Continuar con otra búsqueda",
+                          menu_a,
+                      ],
+                      ),
+    ]
+    answer = inquirer.prompt(questions)
+    selected_option = answer['option']
+
+    if selected_option == "Volver al menú":
+        mostrar_menu(user, session)
+    if selected_option == "Continuar con otra búsqueda":
+        return
+    elif selected_option == menu_a:            
+        trackist_musician(perfil_select, user) if perfil_select.type == "musician" else playlist_album(perfil_select.id) 
+    else:
+        print("Opción inválida. Intente nuevamente.")
+
+
+
+
+
+def trackist_musician(perfil_select, user):
+    print(f"Seleccionaste musician con el ID: {perfil_select.id}")
+
+    perfil_id = perfil_select.id
+
+    try:
+        # Abre el archivo de albums en modo lectura
+        with open('albums.txt', 'r') as f:
+            albums_data = json.load(f)
+    except FileNotFoundError:
+        print("El archivo albums.txt no existe.")
+        return  # Salir de la función si no se puede cargar el archivo
+    
+    # Buscar todos los álbumes del artista específico
+    print(f"Álbum del artista con ID {perfil_id}")
+    print("Lista de albumes:")
+    albums_del_artista = []
+    albums_choices = []  # Lista para almacenar las opciones de álbumes para Inquirer
+    for album_data in albums_data:
+        if album_data['artist'] == perfil_id:
+            album_del_artista = Albums(**album_data)
+            albums_del_artista.append(album_del_artista)
+            albums_choices.append((album_del_artista.name, album_del_artista))  # Agregar opción de álbum a la lista
+
+            print(f"- {album_del_artista.name}")
+
+    if not albums_del_artista:
+        print(f"No se encontró ningún álbum para el artista con ID {perfil_id}")
+
+    print("Submenu musician 🎸" )
+
+    while True:
         questions = [
             inquirer.List('option',
-                          message="Seleccione una opción:",
-                          choices=[
-                              "Volver al menú",
-                              "Continuar con otra búsqueda",
-                          ],
+                          message="Seleccione un álbum:",
+                          choices=albums_choices + [("Volver al menú principal", None)],  # Agregar la opción para volver al menú principal
                           ),
         ]
-        answer = inquirer.prompt(questions)
-        selected_option = answer['option']
- 
-        if selected_option == "Volver al menú":
-            mostrar_menu(user, session)
-        elif selected_option == "Continuar con otra búsqueda":
-            continue
-        else:
-            print("Opción inválida. Intente nuevamente.")
+        answers = inquirer.prompt(questions)
+        selected_album = answers['option']
+
+        if selected_album is None:  # Si el usuario elige volver al menú principal
+            submenulist(perfil_select, user)
+            break
+
+        # Lógica para mostrar la lista de canciones del álbum seleccionado
+        print(f"Lista de canciones del álbum '{selected_album.name}':")
+        for track in selected_album.tracklist:
+            print(f"- {track.name} ({track.duration})")
+
+
+
+def playlist_album(perfil_id):
+    print(f"Seleccionaste listener con el ID: {perfil_id}")
+    pass
 
 def cerrar_sesion(session):
     print("¿Quiere cerrar la sesión? ")
@@ -316,6 +398,7 @@ def cerrar_sesion(session):
    
     # Mostrar los perfiles encontrados
 
+
 def buscar_usuario_por_id(user_id):
     try:
         with open('users.txt', 'r') as file:
@@ -329,7 +412,8 @@ def buscar_usuario_por_id(user_id):
         print(f"No se pudo buscar el usuario: {e}")
     return None
 
-def actualizar_informacion_personal(user=None, session=None):
+
+def actualizar_informacion_personal(user=None):
     if not user:
         print("Debe iniciar sesión para actualizar la información personal.")
         return
@@ -344,18 +428,28 @@ def actualizar_informacion_personal(user=None, session=None):
 
     # Solicitar al usuario que ingrese la nueva información personal
     print(user_data['name'])
-    new_name = input(f"Ingrese el nuevo nombre ({user_data['name']}): ")
+    new_name = input(f"Ingrese el nuevo nombre: ")
     print(user_data['email'])
-    new_email = input(f"Ingrese el nuevo correo electrónico ({user_data['email']}): ")
+    new_email = input(f"Ingrese el nuevo correo electrónico: ")
     print(user_data['username'])
-    new_username = input(f"Ingrese el nuevo nombre de usuario ({user_data['username']}): ")
+    new_username = input(f"Ingrese el nuevo nombre de usuario: ")
     new_password = getpass.getpass("Ingrese su nueva contraseña: ")
+    print(user_data['type'])
+
+    type = [
+        inquirer.List('size',
+                        message="Seleccione el tipo de usuario: ",
+                        choices=['musician','listener']
+                        )                
+    ]
+    new_type_select = inquirer.prompt(type)['size']
 
     # Actualizar la información personal en los datos del usuario
     user_data['name'] = new_name if new_name else user_data['name']
     user_data['email'] = new_email if new_email else user_data['email']
     user_data['username'] = new_username if new_username else user_data['username']
     user_data['password'] = new_password if new_password else user_data['password']
+    user_data['type'] = new_type_select if new_type_select else user_data['type']
 
     # Actualizar los datos del usuario en el archivo users.txt
     try:
@@ -373,7 +467,7 @@ def actualizar_informacion_personal(user=None, session=None):
     except Exception as e:
         print(f"No se pudo actualizar la información: {e}")
 
-    mostrar_menu(user, session)
+    mostrar_menu(user)
 
 
     
@@ -444,11 +538,13 @@ def borrar_cuenta(user=None, session=None):
 
 
 
+
+
 # Bucle principal
 if __name__ == "__main__":
     cargar_datos()
     guardar_datos()
-    # cargar_album_api()
-    # guardar_albums()
-    mostrar_menu(user=None, session=None)
+    cargar_album_api()
+    guardar_albums()
+    mostrar_menu(user=None)
     
