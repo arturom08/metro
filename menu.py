@@ -1,6 +1,5 @@
 import requests
 import json
-import pickle
 import inquirer
 import uuid
 import os
@@ -9,6 +8,8 @@ from albums import Albums
 from user import User
 from sessions import Session
 from list_albums import cargar_album_api, guardar_albums
+from playclass import MediaPlayer
+
 
 
 
@@ -29,7 +30,7 @@ def guardar_datos():
         with open('users.txt', 'w') as f:
             unique_users = {user.id: user for user in users}.values()  # Eliminar duplicados por ID
             json.dump([user.__dict__ for user in unique_users], f, indent=4)
-            print("Datos de usuario guardados correctamente")
+            # print("Datos de usuario guardados correctamente")
     except AttributeError:
         print("Los datos de los usuarios no están cargados.")
     except Exception as e:
@@ -115,7 +116,50 @@ def iniciar_sesion_menu(user=None):
         else:
             print("Correo electrónico o contraseña incorrectos.")
             print("Por favor, inténtelo de nuevo.")
-    mostrar_menu(user, session) 
+    usuarios(user, session) 
+
+
+
+def usuarios(user=None, session=None):
+    while True:
+        if user:
+            print(f"👤 Metrotify, {user.name} ")
+        else:
+            print("👤 Metrotify ")
+
+        questions = [
+            inquirer.List(
+                "selected_option",
+                message="Seleccione una opción:",
+                choices=[
+                    "Iniciar sesión",
+                    "Registrar nuevo usuario",
+                    "Actualizar información personal",
+                    "Borrar cuenta",
+                    "Cerrar sesión",
+                    "Regresar al menú"
+                ],
+            )
+        ]
+
+        answers = inquirer.prompt(questions)
+        selected_option = answers["selected_option"]
+
+        if selected_option == "Iniciar sesión":
+            iniciar_sesion_menu()
+        elif selected_option == "Registrar nuevo usuario":
+            registrar_usuario()
+        elif selected_option == "Actualizar información personal":
+            actualizar_informacion_personal(user)
+        elif selected_option == "Borrar cuenta":
+            borrar_cuenta(user, session)
+        elif selected_option == "Regresar al menú":
+            mostrar_menu(user, session)
+        elif selected_option == "Cerrar sesión":
+            cerrar_sesion(session)
+            break
+        else:
+            print("Opción inválida. Intente nuevamente.")
 
 
 def mostrar_menu(user=None, session=None):
@@ -129,9 +173,9 @@ def mostrar_menu(user=None, session=None):
             inquirer.List('option',
                         message="Seleccione una opción:",
                         choices=[
-                            ("Iniciar sesión"),
-                            ("Registrar nuevo usuario"),
+                            ("Usuario"),
                             ("Buscar perfiles por nombre"),
+                            ("Gestión musical"),
                             ("Actualizar información personal"),
                             ("Borrar cuenta"),
                             ("Cerrar sesión"),
@@ -142,15 +186,15 @@ def mostrar_menu(user=None, session=None):
         selected_option = answer['option']
 
         # Lógica para dirigir la selección a las funciones correspondientes        
-        if selected_option == "Iniciar sesión":
-            iniciar_sesion_menu()
-        elif selected_option == "Registrar nuevo usuario":
-            registrar_usuario()
-        elif selected_option == "Buscar perfiles por nombre":
+        if selected_option == "Usuario":
+            usuarios(user, session)
+        if selected_option == "Buscar perfiles por nombre":
             buscar_perfiles_por_nombre(user, session)
-        elif selected_option == "Actualizar información personal":
+        if selected_option == "Gestión musical":
+            menu_musical(user, session)
+        if selected_option == "Actualizar información personal":
             actualizar_informacion_personal(user)
-        elif selected_option == "Borrar cuenta":
+        if selected_option == "Borrar cuenta":
             borrar_cuenta(user, session)
         elif selected_option == "Cerrar sesión":
             cerrar_sesion(session)
@@ -158,7 +202,39 @@ def mostrar_menu(user=None, session=None):
         else: 
             print("Opción inválida. Intente nuevamente.")
 
+def menu_musical(user=None, session=None):
+    while True:
+        if user:
+            print(f"💽 Metrotify, {user.name} ")
+        else:
+            print("💽 Metrotify ")
 
+        questions = [
+            inquirer.List(
+                "selected_option",
+                message="Seleccione una opción:",
+                choices=[
+                    "Crear un álbum",
+                    "Buscar musica",
+                    "Crear Playlist",
+                    "Regresar al menú"
+                ],
+            )
+        ]
+
+        answers = inquirer.prompt(questions)
+        selected_option = answers["selected_option"]
+
+        if selected_option == "Crear un álbum":
+            iniciar_sesion_menu()
+        if selected_option == "Buscar musica":
+            registrar_usuario()
+        if selected_option == "Crear Playlist":
+            actualizar_informacion_personal(user)
+        elif selected_option == "Regresar al menú":
+            mostrar_menu(user, session)
+        else:
+            print("Opción inválida. Intente nuevamente.")
     
 
 
@@ -285,9 +361,9 @@ def submenulist(perfil_select=None, user=None, session=None):
     print("Submenu 🎧 Metrotify ♬" )
     menu_a = ""
     if perfil_select.type == "listener":
-        menu_a = "listener"
+        menu_a = "Submenu Álbumes"
     elif perfil_select.type == "musician":
-        menu_a = "musician"
+        menu_a = "Submenu Álbumes"
     else:
         print("Opción inválida. Intente nuevamente.")
         return
@@ -308,9 +384,9 @@ def submenulist(perfil_select=None, user=None, session=None):
     if selected_option == "Volver al menú":
         mostrar_menu(user, session)
     if selected_option == "Continuar con otra búsqueda":
-        return
+        buscar_perfiles_por_nombre(user, session)
     elif selected_option == menu_a:            
-        trackist_musician(perfil_select, user) if perfil_select.type == "musician" else playlist_album(perfil_select.id) 
+        trackist_musician(perfil_select, user) if perfil_select.type == "musician" else playlist_album(perfil_select, user) 
     else:
         print("Opción inválida. Intente nuevamente.")
 
@@ -319,12 +395,9 @@ def submenulist(perfil_select=None, user=None, session=None):
 
 
 def trackist_musician(perfil_select, user):
-    print(f"Seleccionaste musician con el ID: {perfil_select.id}")
-
     perfil_id = perfil_select.id
 
     try:
-        # Abre el archivo de albums en modo lectura
         with open('albums.txt', 'r') as f:
             albums_data = json.load(f)
     except FileNotFoundError:
@@ -332,8 +405,8 @@ def trackist_musician(perfil_select, user):
         return  # Salir de la función si no se puede cargar el archivo
     
     # Buscar todos los álbumes del artista específico
-    print(f"Álbum del artista con ID {perfil_id}")
-    print("Lista de albumes:")
+    # print(f"Álbum del artista con ID {perfil_id}")
+    # print("Lista de álbumes:")
     albums_del_artista = []
     albums_choices = []  # Lista para almacenar las opciones de álbumes para Inquirer
     for album_data in albums_data:
@@ -342,44 +415,153 @@ def trackist_musician(perfil_select, user):
             albums_del_artista.append(album_del_artista)
             albums_choices.append((album_del_artista.name, album_del_artista))  # Agregar opción de álbum a la lista
 
-            print(f"- {album_del_artista.name}")
-
     if not albums_del_artista:
-        print(f"No se encontró ningún álbum para el artista con ID {perfil_id}")
+        print(f"No se encontró ningún álbum para el artista {perfil_select.name}")
 
     print("Submenu musician 🎸" )
 
     while True:
-        questions = [
+        album_questions = [
             inquirer.List('option',
                           message="Seleccione un álbum:",
-                          choices=albums_choices + [("Volver al menú principal", None)],  # Agregar la opción para volver al menú principal
+                          choices=albums_choices + [("Volver al menú anterior", None)],  # Agregar la opción para volver al menú principal
                           ),
         ]
-        answers = inquirer.prompt(questions)
-        selected_album = answers['option']
+        album_answers = inquirer.prompt(album_questions)
+        selected_album = album_answers['option']
 
         if selected_album is None:  # Si el usuario elige volver al menú principal
             submenulist(perfil_select, user)
-            break
-
+            continue
+            
         # Lógica para mostrar la lista de canciones del álbum seleccionado
         print(f"Lista de canciones del álbum '{selected_album.name}':")
-        for track in selected_album.tracklist:
-            print(f"- {track.name} ({track.duration})")
+
+        # Crear lista de opciones de canciones
+        track_choices = [(track.name, track) for track in selected_album.tracklist]
+
+        while True:
+        # Preguntar al usuario que seleccione una canción
+            track_questions = [
+                inquirer.List('option',
+                            message="Seleccione una canción",
+                            choices=track_choices + [("Volver al menú anterior", None)],
+                            ),
+            ]
+            track_answers = inquirer.prompt(track_questions)
+            selected_track = track_answers['option']
+
+            if selected_track is None:
+                break  # Salir del bucle y volver al menú de álbumes
 
 
+player = MediaPlayer()
 
-def playlist_album(perfil_id):
-    print(f"Seleccionaste listener con el ID: {perfil_id}")
-    pass
+def reproducir_listado(music_list):
+    questions = [
+        inquirer.List(
+            "selected_option",
+            message="Seleccione una opción:",
+            choices=list(music_list.keys()) + ["Detener"] + ["Regresar"],
+        )
+    ]
+
+    while True:
+        answers = inquirer.prompt(questions)
+        selected_option = answers["selected_option"]
+
+        if selected_option in music_list:
+            print(f"Reproduciendo {selected_option}...")
+            player.play(music_list[selected_option])
+        elif selected_option == "Detener":
+            player.stop() 
+        elif selected_option == "Regresar":
+            player.stop()
+            return  # Regresa al código que llamó a esta función
+        else:
+            print("Opción inválida. Intente nuevamente.")
+
+#modificando aqui
+def playlist_album(perfil_select, user):
+    perfil_id = perfil_select.id
+
+    # Cargar los datos de las playlists
+    try:
+        with open('playlist.txt', 'r') as f:
+            playlist_data = json.load(f)
+    except FileNotFoundError:
+        print("El archivo playlist.txt no existe.")
+        return
+
+    # Cargar los datos de los álbumes
+    try:
+        with open('albums.txt', 'r') as f:
+            albums_data = json.load(f)
+    except FileNotFoundError:
+        print("El archivo albums.txt no existe.")
+        return
+
+    # Buscar las playlists del usuario
+    playlist_del_user = [playlis for playlis in playlist_data if playlis['creator'] == perfil_id]
+    if not playlist_del_user:
+        print(f"No se encontró ninguna playlist para el listener con ID {perfil_id}")
+        return
+    
+    # Mostrar las playlists y seleccionar una
+    playlist_choices = [(playlis['name'], playlis) for playlis in playlist_del_user]
+    selected_playlist = inquirer.prompt([
+        inquirer.List('option', message="Seleccione una playlist", choices=playlist_choices)
+    ])['option']
+
+    # Buscar las canciones en los álbumes usando los IDs de las canciones de la playlist seleccionada
+    canciones_encontradas = []
+    for track_id in selected_playlist['tracks']:
+        for album in albums_data:
+            for track in album['tracklist']:
+                if track['id'] == track_id:
+                    canciones_encontradas.append(track)
+
+    # Imprimir el listado de las canciones
+    music_list = {}
+    for i, cancion in enumerate(canciones_encontradas, start=1):
+        music_list[cancion['name']] = cancion['link']
+    # print(music_list)
+    
+    # # Crear una instancia de MediaPlayer
+    # player = MediaPlayer()
+    
+    reproducir_listado(music_list)
+
+    # questions = [
+    #     inquirer.List(
+    #         "selected_option",
+    #         message="Seleccione una opción:",
+    #         choices=list(music_list.keys()) + ["Detener"] + ["Regresar"],
+    #     )
+    # ]
+
+    # while True:
+    #     answers = inquirer.prompt(questions)
+    #     selected_option = answers["selected_option"]
+
+    #     if selected_option in music_list:
+    #         print(f"Reproduciendo {selected_option}...")
+    #         player.play(music_list[selected_option])
+    #     if selected_option == "Detener":
+    #         player.stop() 
+    #     elif selected_option == "Regresar":
+    #         player.stop()
+    #         playlist_album(perfil_select, user)            
+    #     else:
+    #         print("Opción inválida. Intente nuevamente.")
+
 
 def cerrar_sesion(session):
     print("¿Quiere cerrar la sesión? ")
 
     questions = [
         inquirer.List('confirm',
-                      message="Seleccione una opción:",
+                      message="Seleccione una opción",
                       choices=['Sí', 'No'],
                       ),
     ]
@@ -405,7 +587,7 @@ def buscar_usuario_por_id(user_id):
             users_data = json.load(file)
             for user_data in users_data:
                 if user_data['id'] == user_id:
-                    return user_data
+                    return user_data    
     except FileNotFoundError:
         print("El archivo users.txt no existe.")
     except Exception as e:
@@ -547,4 +729,5 @@ if __name__ == "__main__":
     cargar_album_api()
     guardar_albums()
     mostrar_menu(user=None)
+
     
