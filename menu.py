@@ -358,6 +358,7 @@ def buscar_perfiles_por_nombre(user=None, session=None):
         else:
             print("No se encontraron resultados para la búsqueda.")
 
+
 def submenulist(perfil_select=None, user=None, session=None):
     print("Submenu 🎧 Metrotify ♬" )
     menu_a = ""
@@ -446,10 +447,17 @@ def trackist_musician(perfil_select, user):
         for i, track in enum_tracklist:
             music_list[track.name] = track.link
 
-            # print(music_list)
+        # Convertir el diccionario a formato JSON
+        json_data  = json.dumps(music_list, indent=4)
 
-            #no esta enviando todo el listado
-            # reproducir_listado(music_list, perfil_select, user)
+        # Ahora, asegurémonos de que music_list sea un diccionario
+        music_list = json.loads(json_data)
+
+        # print(json_data)
+
+
+        # A partir de aquí, puedes usar music_list como un diccionario
+        reproducir_listado(music_list, perfil_select, user)
 
 
 
@@ -513,9 +521,19 @@ def playlist_album(perfil_select, user):
     
     # Mostrar las playlists y seleccionar una
     playlist_choices = [(playlis['name'], playlis) for playlis in playlist_del_user]
+
+    # Agregar la opción para regresar al submenú
+    playlist_choices.append(("Regresar al submenú", None))
+    
     selected_playlist = inquirer.prompt([
         inquirer.List('option', message="Seleccione una playlist", choices=playlist_choices)
     ])['option']
+
+    # Si el usuario selecciona "Regresar al submenú", termina la función
+    if selected_playlist is None:
+        submenulist(perfil_select, user)
+        
+    
 
     # Buscar las canciones en los álbumes usando los IDs de las canciones de la playlist seleccionada
     canciones_encontradas = []
