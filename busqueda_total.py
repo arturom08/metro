@@ -1,5 +1,5 @@
 import json
-from menu import cargar_datos_desde_archivo, submenulist
+from menu import cargar_datos_desde_archivo, users, submenulist
 
 # Inicialización de la variable global 'users'
 
@@ -31,8 +31,7 @@ def busqueda_total(user=None, session=None):
 
                 perfil_select = perfil
 
-            # Mostrar el submenú si se encontró un perfil
-            submenulist(perfil_select, user, session)
+         
 
         # Búsqueda en albums.txt
         with open('albums.txt', 'r') as f:

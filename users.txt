@@ -814,5 +814,13 @@
         "username": "Lis Yukary",
         "password": "amor..09",
         "type": "musician"
+    },
+    {
+        "id": "c922ac73-45f1-4785-9aae-702c8d13a4b8",
+        "name": "arturo",
+        "email": "arturom08@hotmail.com",
+        "username": "arturom7k",
+        "password": "amor..09",
+        "type": "listener"
     }
 ]
