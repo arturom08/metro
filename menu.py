@@ -4,10 +4,12 @@ import inquirer
 import uuid
 import os
 import getpass
+from datetime import datetime
+import pytz
 from albums import Albums
 from user import User
 from sessions import Session
-from list_albums import cargar_album_api, guardar_albums
+from list_albums import cargar_album_api, guardar_albums, registrar_album_nuevo
 from playclass import MediaPlayer
 
 
@@ -22,6 +24,14 @@ users = []
 
 def generar_id_unique():
     return str(uuid.uuid4())
+
+def generar_id_album():
+    unique_id = generar_id_unique()
+    
+    # Formatea el UUID como b48bf9e9-cff4-4313-a61f-4d39b9a40ce2
+    album_id = f"{unique_id[0:8]}-{unique_id[9:13]}-{unique_id[14:18]}-{unique_id[19:23]}-{unique_id[24:]}"
+    
+    return album_id
 
 
 def guardar_datos():
@@ -100,6 +110,8 @@ def cargar_datos_desde_archivo():
     except Exception as e:
         print(f"No se pudo cargar los datos desde users.txt: {e}")
 
+
+
 def iniciar_sesion_menu(user=None):
     user = None
     while not user:
@@ -117,7 +129,6 @@ def iniciar_sesion_menu(user=None):
             print("Correo electrónico o contraseña incorrectos.")
             print("Por favor, inténtelo de nuevo.")
     usuarios(user, session) 
-
 
 
 def usuarios(user=None, session=None):
@@ -226,7 +237,7 @@ def menu_musical(user=None, session=None):
         selected_option = answers["selected_option"]
 
         if selected_option == "Crear un álbum":
-            iniciar_sesion_menu()
+            registrar_album(user)
         if selected_option == "Buscar musica":
             registrar_usuario()
         if selected_option == "Crear Playlist":
@@ -237,6 +248,73 @@ def menu_musical(user=None, session=None):
             print("Opción inválida. Intente nuevamente.")
     
 
+def registrar_album(user=None, session=None):
+    
+    if user and user.type == "musician":
+        print(f"Registre su album 🎧 {user.name} {user.type} ♬")
+    elif user.type == "listener":
+        print("No tiene los permmisos de músico.")
+        mostrar_menu(user, session)
+    else:
+        print("El usuario no está logueado o no es un músico.")
+        mostrar_menu(user, session)
+    
+    id = generar_id_album()
+    print("El id del album es: ", id)
+    
+    # Obtén la fecha y hora actual en UTC
+    ahora = datetime.now(pytz.utc)
+    # Formatea la fecha y hora como una cadena de texto en el formato deseado
+    fecha_str = ahora.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    
+    name = input("Ingrese el nombre del álbum: ")
+    description = input("Ingrese la descripción del álbum: ")
+    cover = input("Ingrese la URL de la portada del álbum: ")
+    published = fecha_str
+    print("Fecha de publicación del álbum: ", fecha_str)
+    input("Presione Enter para continuar...")
+    genre = input("Ingrese el género del álbum: ")
+    # artist = input("Ingrese el ID del artista: ")
+    artist = user.id
+    print("el id del artista es: ", artist)
+
+    tracklist = []
+    while True:
+        add_track = input("¿Desea agregar una pista al álbum? (s/n): ")
+        if add_track.lower() == 'n':
+            break
+
+        track_id = generar_id_album()
+        print("El id de la musica es: ", id)
+        track_name = input("Ingrese el nombre de la pista: ")
+        track_duration = input("Ingrese la duración de la pista (MM:SS): ")
+        track_link = input("Ingrese el enlace de la pista: ")
+
+        track = {
+            "id": track_id,
+            "name": track_name,
+            "duration": track_duration,
+            "link": track_link
+        }
+        tracklist.append(track)
+
+    album = {
+        "id": id,
+        "name": name,
+        "description": description,
+        "cover": cover,
+        "published": published,
+        "genre": genre,
+        "artist": artist,
+        "tracklist": tracklist
+    }
+
+    registrar_album_nuevo(album)
+
+    print("Álbum registrado exitosamente.")
+    print(json.dumps(album, indent=4))
+    
+    
 
 
 def registrar_usuario():

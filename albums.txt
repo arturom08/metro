@@ -14482,5 +14482,34 @@
                 "link": "https://soundcloud.com/ginchiestrecords/ginchy-gxd-feat-yasmin-jane-as-the-rush-comes-radio-edit?in=luk_music/sets/ibiza-techno-house-2024-summer-mix&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing"
             }
         ]
+    },
+    {
+        "id": "d847e11b-17b4-4889-897d-94d39c251cba",
+        "name": "Thien Ly Oi",
+        "description": "music K-pop, pop, rock",
+        "cover": "https://i.ytimg.com/vi/5CKRNUTbx7A/maxresdefault.jpg",
+        "published": "2024-03-17T22:37:15.687679Z",
+        "genre": "Pop",
+        "artist": "1cf6b928-4267-4394-b228-adda644ffd9e",
+        "tracklist": [
+            {
+                "id": "e64273b0-df4c-4e74-85c2-28638b90d2a9",
+                "name": "Thien Ly Oi",
+                "duration": "03:27",
+                "link": "https://soundcloud.com/luk_music/elderbrook-dababy-why-do-we-shake-in-the-cold-practice-luk-mashup-remix?in=luk_music/sets/ibiza-techno-house-2024-summer-mix&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing"
+            },
+            {
+                "id": "74c0afed-966b-4f6b-a28f-74277cfdb403",
+                "name": "Hoa Hai Duong",
+                "duration": "04:00",
+                "link": "https://soundcloud.com/j97imjack/sets/hoa-h-i-ng-single-1"
+            },
+            {
+                "id": "54051dbe-084f-4e98-8806-e760ba85ba25",
+                "name": "Dom Dom",
+                "duration": "05:02",
+                "link": "https://soundcloud.com/j97imjack/sets/om-m-single"
+            }
+        ]
     }
 ]

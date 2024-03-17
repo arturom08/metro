@@ -814,5 +814,13 @@
         "username": "Lis Yukary",
         "password": "amor..09",
         "type": "musician"
+    },
+    {
+        "id": "21c01d16-7f06-4269-be42-f3b55d13df34",
+        "name": "e",
+        "email": "fdsf",
+        "username": "df",
+        "password": "berlin..98",
+        "type": "listener"
     }
 ]
