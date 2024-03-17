@@ -374,6 +374,7 @@ def registrar_usuario():
     print("Usuario registrado exitosamente.")
     print(json.dumps(user_registered, indent=4))
 
+
 #funcion registrar nuevos usuarios
 def registrar_nuevo(user_data):
     try:
@@ -434,6 +435,7 @@ def buscar_perfiles_por_nombre(user=None, session=None):
 
         else:
             print("No se encontraron resultados para la búsqueda.")
+
 
 def submenulist(perfil_select=None, user=None, session=None):
     print("Submenu 🎧 Metrotify ♬" )
@@ -510,32 +512,38 @@ def trackist_musician(perfil_select, user):
 
         if selected_album is None:  # Si el usuario elige volver al menú principal
             submenulist(perfil_select, user)
-            continue
+            # continue
             
-        # Lógica para mostrar la lista de canciones del álbum seleccionado
-        print(f"Lista de canciones del álbum '{selected_album.name}':")
+
 
         # Crear lista de opciones de canciones
-        track_choices = [(track.name, track) for track in selected_album.tracklist]
+        enum_tracklist = enumerate(selected_album.tracklist, start=1)
 
-        while True:
-        # Preguntar al usuario que seleccione una canción
-            track_questions = [
-                inquirer.List('option',
-                            message="Seleccione una canción",
-                            choices=track_choices + [("Volver al menú anterior", None)],
-                            ),
-            ]
-            track_answers = inquirer.prompt(track_questions)
-            selected_track = track_answers['option']
+        music_list = {}
 
-            if selected_track is None:
-                break  # Salir del bucle y volver al menú de álbumes
+        # Iterar sobre cada pista en el álbum
+        for i, track in enum_tracklist:
+            music_list[track.name] = track.link
+
+        # Convertir el diccionario a formato JSON
+        json_data  = json.dumps(music_list, indent=4)
+
+        # Ahora, asegurémonos de que music_list sea un diccionario
+        music_list = json.loads(json_data)
+
+        # print(json_data)
+
+
+        # A partir de aquí, puedes usar music_list como un diccionario
+        reproducir_listado(music_list, perfil_select, user)
+
+
+
 
 
 player = MediaPlayer()
 
-def reproducir_listado(music_list):
+def reproducir_listado(music_list, perfil_select, user):
     questions = [
         inquirer.List(
             "selected_option",
@@ -552,14 +560,18 @@ def reproducir_listado(music_list):
             print(f"Reproduciendo {selected_option}...")
             player.play(music_list[selected_option])
         elif selected_option == "Detener":
-            player.stop() 
+            player.stop()
+             
         elif selected_option == "Regresar":
             player.stop()
+            playlist_album(perfil_select, user)
             return  # Regresa al código que llamó a esta función
         else:
             print("Opción inválida. Intente nuevamente.")
+        
 
-#modificando aqui
+
+#modificando aqui listener
 def playlist_album(perfil_select, user):
     perfil_id = perfil_select.id
 
@@ -587,9 +599,19 @@ def playlist_album(perfil_select, user):
     
     # Mostrar las playlists y seleccionar una
     playlist_choices = [(playlis['name'], playlis) for playlis in playlist_del_user]
+
+    # Agregar la opción para regresar al submenú
+    playlist_choices.append(("Regresar al submenú", None))
+    
     selected_playlist = inquirer.prompt([
         inquirer.List('option', message="Seleccione una playlist", choices=playlist_choices)
     ])['option']
+
+    # Si el usuario selecciona "Regresar al submenú", termina la función
+    if selected_playlist is None:
+        submenulist(perfil_select, user)
+        
+    
 
     # Buscar las canciones en los álbumes usando los IDs de las canciones de la playlist seleccionada
     canciones_encontradas = []
@@ -608,30 +630,10 @@ def playlist_album(perfil_select, user):
     # # Crear una instancia de MediaPlayer
     # player = MediaPlayer()
     
-    reproducir_listado(music_list)
+    reproducir_listado(music_list, perfil_select, user)
 
-    # questions = [
-    #     inquirer.List(
-    #         "selected_option",
-    #         message="Seleccione una opción:",
-    #         choices=list(music_list.keys()) + ["Detener"] + ["Regresar"],
-    #     )
-    # ]
 
-    # while True:
-    #     answers = inquirer.prompt(questions)
-    #     selected_option = answers["selected_option"]
 
-    #     if selected_option in music_list:
-    #         print(f"Reproduciendo {selected_option}...")
-    #         player.play(music_list[selected_option])
-    #     if selected_option == "Detener":
-    #         player.stop() 
-    #     elif selected_option == "Regresar":
-    #         player.stop()
-    #         playlist_album(perfil_select, user)            
-    #     else:
-    #         print("Opción inválida. Intente nuevamente.")
 
 
 def cerrar_sesion(session):
